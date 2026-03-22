@@ -17,4 +17,4 @@ Allow: /
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://aaryan-patel.com/sitemap.xml
+Sitemap: https://aaryankaportfolio.netlify.app/sitemap.xml
