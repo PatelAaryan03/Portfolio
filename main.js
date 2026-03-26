@@ -95,9 +95,19 @@ if (particleCanvas) {
 
 const scrollProgress = document.querySelector('.scroll-progress');
 
-window.addEventListener('scroll', () => {
+let ticking = false;
+
+const updateScrollProgress = () => {
     const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
     scrollProgress.style.width = scrollPercentage + '%';
+    ticking = false;
+};
+
+window.addEventListener('scroll', () => {
+    if (!ticking) {
+        window.requestAnimationFrame(updateScrollProgress);
+        ticking = true;
+    }
 });
 
 // ===========================
@@ -437,142 +447,76 @@ document.addEventListener('mousemove', (e) => {
 
 console.log('%cWelcome to Aaryan\'s Portfolio! 🚀', 'color: #00d4ff; font-size: 18px; font-weight: bold;');
 console.log('%cBuilt with vanilla HTML, CSS & JavaScript | Press "/" to contact', 'color: #b0b0c0; font-size: 12px;');
-console.log('%cLet\'s build something amazing together! 💡', 'color: #00d4ff; font-size: 14px; font-weight: bold;');
-
 // ===========================
-// ANIMATED CUSTOM CURSOR
+// SMOOTH SCROLL ENHANCEMENT
 // ===========================
 
-class AnimatedCursor {
-    constructor() {
-        this.cursor = document.createElement('div');
-        this.cursor.className = 'cursor';
-        document.body.appendChild(this.cursor);
-
-        this.x = 0;
-        this.y = 0;
-        this.targetX = 0;
-        this.targetY = 0;
-
-        this.trails = [];
-        this.trailLimit = 8;
-        this.isOver = false;
-
-        document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        document.addEventListener('mouseover', (e) => this.onMouseOver(e));
-        document.addEventListener('mouseout', (e) => this.onMouseOut());
+const smoothScrollElements = document.querySelectorAll('a[href^="#"]');
+smoothScrollElements.forEach(link => {
+    link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href === '#') return;
         
-        this.animate();
-    }
-
-    onMouseMove(e) {
-        this.targetX = e.clientX;
-        this.targetY = e.clientY;
-        this.createTrail(this.targetX, this.targetY);
-    }
-
-    onMouseOver(e) {
-        // Check if hovering over interactive elements
-        const interactiveElements = [
-            'A', 'BUTTON', 'INPUT', '.btn', '.project-btn', '.nav-link', '.skill-tag'
-        ];
-        
-        let target = e.target;
-        let isInteractive = false;
-
-        // Check if element is interactive by tag name
-        if (interactiveElements.includes(target.tagName)) {
-            isInteractive = true;
+        const target = document.querySelector(href);
+        if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-
-        // Check if element has interactive classes
-        if (target.classList) {
-            if (target.classList.contains('btn') || 
-                target.classList.contains('project-btn') || 
-                target.classList.contains('nav-link') ||
-                target.classList.contains('skill-tag') ||
-                target.classList.contains('project-card') ||
-                target.classList.contains('skill-group')) {
-                isInteractive = true;
-            }
-        }
-
-        // Check parent elements
-        let parent = target.parentElement;
-        while (parent && !isInteractive) {
-            if (parent.classList) {
-                if (parent.classList.contains('btn') || 
-                    parent.classList.contains('project-btn') || 
-                    parent.classList.contains('nav-link') ||
-                    parent.classList.contains('skill-tag') ||
-                    parent.classList.contains('project-card') ||
-                    parent.classList.contains('skill-group')) {
-                    isInteractive = true;
-                }
-            }
-            parent = parent.parentElement;
-        }
-
-        if (isInteractive) {
-            this.isOver = true;
-            this.cursor.classList.add('active');
-        }
-    }
-
-    onMouseOut() {
-        this.isOver = false;
-        this.cursor.classList.remove('active');
-    }
-
-    createTrail(x, y) {
-        const trail = document.createElement('div');
-        trail.className = 'cursor-trail';
-        trail.style.left = x + 'px';
-        trail.style.top = y + 'px';
-        document.body.appendChild(trail);
-
-        this.trails.push({
-            element: trail,
-            x: x,
-            y: y,
-            life: 1
-        });
-
-        if (this.trails.length > this.trailLimit) {
-            const old = this.trails.shift();
-            old.element.remove();
-        }
-    }
-
-    animate() {
-        // Smooth cursor follow
-        this.x += (this.targetX - this.x) * 0.2;
-        this.y += (this.targetY - this.y) * 0.2;
-
-        this.cursor.style.left = this.x + 'px';
-        this.cursor.style.top = this.y + 'px';
-
-        // Animate trails
-        this.trails.forEach((trail, index) => {
-            trail.life -= 0.05;
-            trail.element.style.opacity = trail.life;
-            trail.element.style.filter = `blur(${(1 - trail.life) * 2}px)`;
-
-            if (trail.life <= 0) {
-                trail.element.remove();
-                this.trails.splice(index, 1);
-            }
-        });
-
-        requestAnimationFrame(() => this.animate());
-    }
-}
-
-// Initialize custom cursor when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        new AnimatedCursor();
     });
-} else {
-    new AnimatedCursor();
-}
+});
+
+// ===========================
+// INTERSECTION OBSERVER - SMOOTH REVEAL
+// ===========================
+
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+        }
+    });
+}, observerOptions);
+
+// Observe animated elements with requestAnimationFrame for smooth performance
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.project-card, .skill-group, .contact-item, .about-paragraph').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        observer.observe(el);
+    });
+});
+
+// ===========================
+// SMOOTH HOVER EFFECTS WITH DEBOUNCE
+// ===========================
+
+const throttle = (func, limit) => {
+    let inThrottle;
+    return function(...args) {
+        if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    }
+};
+
+document.querySelectorAll('.btn, .project-btn, .nav-link, .skill-tag').forEach(el => {
+    el.addEventListener('mouseenter', function() {
+        this.style.willChange = 'transform';
+    });
+    
+    el.addEventListener('mouseleave', function() {
+        this.style.willChange = 'auto';
+    });
+});
+
+console.log('%cLet\'s build something amazing together! 💡', 'color: #00d4ff; font-size: 14px; font-weight: bold;');
